@@ -1,0 +1,3 @@
+com: 
+  justgifit: 
+    gifLocation: ${java.io.tmpdir}/abc/
