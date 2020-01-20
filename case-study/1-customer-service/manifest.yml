@@ -1,0 +1,12 @@
+applications:
+ - name: customer-service
+   path: target/customer-service-0.0.1-SNAPSHOT.jar
+   memory: 1G
+   instances: 1
+   host: customer-service-ad
+   env:
+     SPRING_PROFILES_ACTIVE: cloud #value can be dev, qa, prod, if not given default will be picked
+     JBP_CONFIG_SPRING_AUTO_RECONFIGURATION: '{enabled: false}'
+   services:
+    - service-registry-1
+    - cloud-bus-amqp-1
