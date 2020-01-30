@@ -1,0 +1,101 @@
+PWS: https://console.run.pivotal.io/
+service-registry-1
+cloud-bus-amqp-1
+config-server-1  {"git":{"uri":"https://github.com/abhijitdas-github/msa-properties"}}
+Check they are online
+
+		
+Open Git bash and cmd
+$> cf login -a https://api.run.pivotal.io -u abhijit.ad.das@gmail.com -o abhijit-org -s msa_case_study
+
+Open STS D:\Users\abhijit.ad.das\workspace-msa
+
+start config server and eureka server in local. In cloud it is already running as service.
+Verify:
+http://localhost:8888/item-service/default and http://localhost:8888/item-service/qa
+http://localhost:8761/
+https://eureka-d0598371-ee72-4fe7-96dc-acfce6e68462.cfapps.io/
+
+Start zuul in both cloud and local.
+Verify the service is registered with registry service
+http://localhost:8761/
+https://eureka-d0598371-ee72-4fe7-96dc-acfce6e68462.cfapps.io/
+
+Start cust service in both cloud and local
+
+http://localhost:9001/customers
+http://localhost:15672
+Create cust  
+POST:  curl -d "{\"id\":111,\"email\":\"fn.ln.1@email.com\",\"firstName\":\"FN111\",\"lastName\":\"LN111\"}" -H "Content-Type: application/json" http://localhost:9001/customer
+Verify http://localhost:9001/customers
+Verify in rabbitMQ: http://localhost:15672
+Check console log for db and mq update
+
+https://customer-service-ad.cfapps.io/customers
+Create cust  
+POST: curl -d "{\"id\":111,\"email\":\"fn.ln.1@email.com\",\"firstName\":\"FN111\",\"lastName\":\"LN111\"}" -H "Content-Type: application/json" https://customer-service-ad.cfapps.io/customer
+Verify https://customer-service-ad.cfapps.io/customers
+Verify in rabbitMQ: https://termite.rmq.cloudamqp.com/#/
+Check log : cf logs customer-service --recent
+
+Start item service in both cloud and local
+Verify:
+	http://localhost:9002/items
+	http://localhost:9002/item/Mobile
+	http://localhost:9002/item/Mob -- Hystrix and config server check  http://localhost:8080/item-service/item/Mob
+
+	https://item-service-ad.cfapps.io/items
+	https://item-service-ad.cfapps.io/item/Mobile
+	https://item-service-ad.cfapps.io/item/Mob -- Hystrix and config server check
+
+Check log : cf logs item-service --recent
+	
+Check instances registered: https://eureka-d0598371-ee72-4fe7-96dc-acfce6e68462.cfapps.io/
+	
+Start sales order service in both cloud and local	
+Create customer: curl -d "{\"id\":211,\"email\":\"fn.ln.1@email.com\",\"firstName\":\"FN211\",\"lastName\":\"LN211\"}" -H "Content-Type: application/json" http://localhost:9001/customer
+                 curl -d "{\"id\":211,\"email\":\"fn.ln.1@email.com\",\"firstName\":\"FN211\",\"lastName\":\"LN211\"}" -H "Content-Type: application/json" https://customer-service-ad.cfapps.io/customer
+See customer created in SOS table: http://localhost:9003/custsos
+								   https://sales-order-service-ad.cfapps.io/custsos
+
+Create sales order local:
+curl -d "{\"orderDescription\":\"Appliance purchase 1\",\"orderDate\":\"2020-01-14\",\"custoId\":211,\"itemNameList\":[\"Mobile\",\"WM\"]}" -H "Content-Type: application/json" http://localhost:9003/order
+See sales order and item tables
+http://localhost:9003/orders
+http://localhost:9003/orderedItems
+
+Create sales order in PCF:
+curl -d "{\"orderDescription\":\"Appliance purchase 1\",\"orderDate\":\"2020-01-14\",\"custoId\":211,\"itemNameList\":[\"Mobile\",\"WM\"]}" -H "Content-Type: application/json" https://sales-order-service-ad.cfapps.io/order
+See sales order and item tables
+https://sales-order-service-ad.cfapps.io/orders
+https://sales-order-service-ad.cfapps.io/orderedItems
+Check log : cf logs sales-order-service --recent
+
+https://zuul-proxy-service-ad.cfapps.io/sales-order-service/orders
+https://zuul-proxy-service-ad.cfapps.io/sales-order-service/orderedItems
+http://zuul-proxy-service-ad.cfapps.io/item-service/item/Mob
+
+Refresh from Git config prop
+Local:
+GET: http://localhost:9002/item/Mob OR http://localhost:9012/item/Mob
+Change and add and commit: D:\msa_case_study     -  -> git add -A      git commit -m "test"
+POST: curl -d "{}" -H "Content-Type: application/json" http://localhost:9002/actuator/refresh
+	  curl -d "{}" -H "Content-Type: application/json" http://localhost:9012/actuator/bus-refresh
+
+Cloud:
+Local:
+GET: https://item-service-ad.cfapps.io/item/Mob
+Change in Github: https://github.com/abhijitdas-github/msa-properties
+POST: curl -d "{}" -H "Content-Type: application/json" https://item-service-ad.cfapps.io/actuator/refresh
+      curl -d "{}" -H "Content-Type: application/json" https://item-service-ad.cfapps.io/actuator/bus-refresh
+
+
+
+
+
+Zuul
+http://localhost:9001/customers
+http://localhost:8080/customer-service/customers
+
+https://customer-service-ad.cfapps.io/customers
+https://zuul-proxy-service-ad.cfapps.io/customer-service/customers		
