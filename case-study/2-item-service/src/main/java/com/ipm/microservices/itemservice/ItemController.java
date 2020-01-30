@@ -15,60 +15,59 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
 
-
-@RefreshScope //Add this class in scope for property refresh
+@RefreshScope // Add this class in scope for property refresh
 @RestController
 public class ItemController {
 	private static Logger log = LoggerFactory.getLogger(ItemController.class);
-	
-	  @Value("${itemName:PNFitemName}")
-	  private String itemName;
-	  
-	  @Value("${itemDescription:PNFitemDescription}")
-	  private String description;
-	
+
+	@Value("${itemName:PNFitemName}")
+	private String itemName;
+
+	@Value("${itemDescription:PNFitemDescription}")
+	private String description;
+
 	@Autowired
 	Environment environment;
-	
+
 	@Autowired
 	ItemRepository itemRepo;
-	
-	@RequestMapping(value="/")
+
+	@RequestMapping(value = "/")
 	public String home() {
 		log.info("item-service is up and running!");
 		return "item-service is up and running!";
 	}
-	
-	@RequestMapping(value="/items", method=RequestMethod.GET)
-	public List<Item> getItems(){
+
+	@RequestMapping(value = "/items", method = RequestMethod.GET)
+	public List<Item> getItems() {
 		log.info("Getting all items from Database");
 		List<Item> itemList = itemRepo.findAll();
 		int idx = 0;
-		for(Item item: itemList) {
-			log.info("Found Item = [" + ++idx + ": " + Utility.objToStr(item) +"]");
+		for (Item item : itemList) {
+			log.info("Found Item = [" + ++idx + ": " + Utility.objToStr(item) + "]");
 		}
 		return itemList;
-	}	
-	
-	@RequestMapping(value="/item/{itemName}", method=RequestMethod.GET)
+	}
+
+	@RequestMapping(value = "/item/{itemName}", method = RequestMethod.GET)
 	@HystrixCommand(fallbackMethod = "getItem_Fallback")
-	public Item getItem(@PathVariable String itemName){
-		log.info("PORT:"+environment.getProperty("local.server.port"));
-		log.info("Getting Item with [name="+itemName+"] from database");
+	public Item getItem(@PathVariable String itemName) {
+		log.info("PORT:" + environment.getProperty("local.server.port"));
+		log.info("Getting Item with [name=" + itemName + "] from database");
 		Item item = itemRepo.findByItemName(itemName);
-		if(item!=null) 
-			log.info("Item found ... "+ Utility.objToStr(item));
-		else 
+		if (item != null)
+			log.info("Item found ... " + Utility.objToStr(item));
+		else
 			throw new NullPointerException();
 		return item;
 	}
-	
-	public Item getItem_Fallback(String itemName, Throwable ex){
-		log.info("Executing fallback method..");
+
+	public Item getItem_Fallback(String itemName, Throwable ex) {
+		log.info("Item not found, Executing fallback method..");
 		Item item = new Item();
 		item.setItemName(this.itemName);
 		item.setDescription(description);
-		
+		log.info("Error getting item ... " + Utility.objToStr(item));
 		return item;
 	}
 }
